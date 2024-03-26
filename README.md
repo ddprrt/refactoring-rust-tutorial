@@ -1,4 +1,4 @@
-# Workshop Repo: Microservice with Tokio and Rust
+# Workshop Repo: Refactoring Rust
 
 *NOTE*: This is Work-In-Progress! Please check for updates a day before the workshop.
 
@@ -50,78 +50,4 @@ We recommend the following extensions:
 
 - [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens). Inline errors
 
-## Tasks
 
-Our goal is to build a simple in memory key value store. We use Axum as basis and work with Tower services to get certain features right. In the `tests` folder you find four test files accompanying all four exercises. Remove the `ignore` macros at the beginning of each test to run it. Note that some tests require to be run with the `--nocapture` flag.
-
-Those are the four exercises.
-
-### Exercise 1: *Axum*
-
-- Create an Axum Router for two routes.
-- The root (`"/"`) says `<h1>Hello Axum</h1>`
-- The path `"/hello"` says either `<h1>Hello Unknown Visitor</h1>` or subsitutes `Unknown Visitor` with a name provided by parameter `name`
-
-### Exercise 2: *Key Value Store*
-
-- Store data in a Key Value Store (provided by a `HashMap` shared state)
-- Use `/kv/:key` to store data via `POST`, and to retrieve data via `GET`
-- Return a 404 if there is no data saved
-- *Stretch goals*:
-  - Locking an `RwLock` might result in a `PoisonError`. Make sure you can convert a `PoisonError` to a `Response`. Tip: implement your custom error and implement `IntoResponse`
-  - The default request size is 2MB. You want to store data up to 8MB in your key value store. Deactivate the default body limit, and set your own request body limit. Tip: Use a Service Builder and respective Layers from `axum` and `tower_http`
-
-### Exercise 2a: *Image Processing*
-
-- Next to data, store meta information on the type of data stored (images, text, see content-type)
-- For images, provide a route `/kv/:key/thumbnail` that returns a thumbnail of the image
-- For images, provide a route `/kv/:key/grayscale` that returns a grayscale version of the image
-- Use the `image` crate to process images: https://crates.io/crates/image
-- Apply proper error handling creating a custom error type called `ImageProcessingError` and implementing `IntoResponse` for it
-- Create a struct called `ImageResponse` and implement `IntoResponse` for it. This struct should contain the image data and the content type
-
-### Exercise 3: *Custom Services*
-- Write a logging service that logs every request to stdout
-- *Stretch goal*
-  - Log before executing the request and after
-
-Run tests with `--nocapture`!
-
-### Exercise 4: *Built-in Services*
-- Define nested routes for administrative tasks, be sure to add authorization so only authorized people can access. A plain auth token is ok, if you want to go fancy create your own implementation.
-- Stretch goal: If you haven't worked on the upload limit, try doing it now.
-
-### Exercise 5: *Validation*
-
-_This is a stretch goal if time permits, combining a few techniques in Rust that are very common, such as:_
-
-- Using `serde` to deserialize JSON
-- Using `validator` to validate user input
-- Using enums to describe state
-- Implementing common traits: `Default`, `Debug`, `Deserialize`, `Serialize`
-- Async traits
-- Custom Errors and error mapping
-
-Task: Define `user` routes to create a new user, and to validate them, e.g
-
-`POST /user` with body
-
-```json
-{
-  "username": "myusername",
-  "email": "john@doe.com",
-  "age": 42
-}
-```
-
-By default, users are not active. A call to
-
-`POST /user/{username}/activate`
-
-activates the user.
-
-
-- Store data in a Key Value Store (provided by a `HashMap` shared state)
-- Use Serde to parse the body
-- Use `validator` to validate the data
-- Define a `ValidatedJson` type that makes sure that any struct that has the `Validate` trait and `DeserializeOwned` trait can be used as an extractor (see `FromRequest`).
