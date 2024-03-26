@@ -55,5 +55,5 @@ pub async fn grayscale(
         None => return Err(KVError::not_found()),
     };
 
-    Ok(ImageResponse::from(image.grayscale()))
+    Ok(ImageResponse::try_from(image.grayscale()))
 }

@@ -10,7 +10,7 @@ pub struct ImageResponse(Bytes);
 
 impl ImageResponse {
     pub(crate) fn new(bytes: impl Into<Bytes>) -> Self {
-        Self(bytes)
+        Self(bytes.into())
     }
 }
 
