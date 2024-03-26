@@ -7,8 +7,19 @@ use hyper::StatusCode;
 pub struct KVError(StatusCode, String);
 
 impl KVError {
-    pub fn new(status: StatusCode, message: impl ToString) -> Self {
-        Self(status, message.to_string())
+    pub fn new(status: StatusCode, message: impl Into<String>) -> Self {
+        Self(status, message.into())
+    }
+
+    pub(crate) fn not_found() -> KVError {
+        KVError::new(StatusCode::NOT_FOUND, "Key not found")
+    }
+
+    pub(crate) fn forbidden() -> _ {
+        KVError::new(
+            StatusCode::FORBIDDEN,
+            "Not possible to grayscale this type of image",
+        )
     }
 }
 
@@ -22,10 +33,7 @@ impl std::error::Error for KVError {}
 
 impl<T> From<PoisonError<T>> for KVError {
     fn from(_value: PoisonError<T>) -> Self {
-        Self(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Error writing to DB".to_string(),
-        )
+        KVError::new(StatusCode::INTERNAL_SERVER_ERROR, "Error writing to DB")
     }
 }
 
