@@ -11,8 +11,6 @@ use image::ImageOutputFormat;
 
 use crate::SharedState;
 
-use self::kv_error::KVError;
-
 mod kv_error;
 
 pub async fn post_kv(
@@ -20,9 +18,10 @@ pub async fn post_kv(
     TypedHeader(content_type): TypedHeader<ContentType>,
     State(state): State<SharedState>,
     data: Bytes,
-) -> Result<String, KVError> {
+) -> Result<String, ()> {
     state
-        .write()?
+        .write()
+        .unwrap()
         .db
         .insert(key, (content_type.to_string(), data));
     Ok("OK".to_string())
@@ -31,29 +30,30 @@ pub async fn post_kv(
 pub async fn get_kv(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, KVError> {
-    match state.read()?.db.get(&key) {
+) -> Result<impl IntoResponse, impl IntoResponse> {
+    match state.read().unwrap().db.get(&key) {
         Some((content_type, data)) => Ok(([("content-type", content_type.clone())], data.clone())),
-        None => Err(KVError::new(StatusCode::NOT_FOUND, "Key not found")),
+        None => Err((StatusCode::NOT_FOUND, "Key not found").into_response()),
     }
 }
 
 pub async fn grayscale(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, KVError> {
-    let image = match state.read()?.db.get(&key) {
+) -> Result<impl IntoResponse, impl IntoResponse> {
+    let image = match state.read().unwrap().db.get(&key) {
         Some((content_type, data)) => {
             if content_type == "image/png" {
                 image::load_from_memory(&data).unwrap()
             } else {
-                return Err(KVError::new(
+                return Err((
                     StatusCode::FORBIDDEN,
                     "Not possible to grayscale this type of image",
-                ));
+                )
+                    .into_response());
             }
         }
-        None => return Err(KVError::new(StatusCode::NOT_FOUND, "Key not found")),
+        None => return Err((StatusCode::NOT_FOUND, "Key not found").into_response()),
     };
 
     let mut vec: Vec<u8> = Vec::new();
