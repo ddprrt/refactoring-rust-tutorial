@@ -44,12 +44,12 @@ pub async fn grayscale(
 ) -> Result<impl IntoResponse, KVError> {
     match state.read()?.db.get(&key) {
         Some(StoredType::Image(image)) => Ok(ImageResponse::try_from(image.grayscale())?),
-        Some(StoredType::Other(_, _)) => return Err(KVError::forbidden()),
-        _ => return Err(KVError::not_found()),
+        Some(StoredType::Other(_, _)) => Err(KVError::forbidden()),
+        _ => Err(KVError::not_found()),
     }
 }
 
-pub async fn thumbnail(
+pub async fn _thumbnail(
     Path(key): Path<String>,
     State(state): State<SharedState>,
 ) -> Result<impl IntoResponse, KVError> {
@@ -59,7 +59,7 @@ pub async fn thumbnail(
             100,
             image::imageops::FilterType::Nearest,
         ))?),
-        Some(StoredType::Other(_, _)) => return Err(KVError::forbidden()),
-        _ => return Err(KVError::not_found()),
+        Some(StoredType::Other(_, _)) => Err(KVError::forbidden()),
+        _ => Err(KVError::not_found()),
     }
 }

@@ -25,7 +25,7 @@ impl IntoResponse for &StoredType {
         match self {
             StoredType::Image(image) => match ImageResponse::try_from(image) {
                 Ok(response) => response.into_response(),
-                Err(image_error) => KVError::from(image_error).into_response(),
+                Err(image_error) => image_error.into_response(),
             },
             StoredType::Other(content_type, bytes) => {
                 ([("content-type", content_type.to_string())], bytes.clone()).into_response()
