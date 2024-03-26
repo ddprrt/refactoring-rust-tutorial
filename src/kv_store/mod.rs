@@ -6,13 +6,15 @@ use axum::{
     response::IntoResponse,
     TypedHeader,
 };
-use hyper::{body::Bytes, StatusCode};
+use hyper::body::Bytes;
 use image::ImageOutputFormat;
 
 use crate::SharedState;
 
+use self::image_response::ImageResponse;
 use self::kv_error::KVError;
 
+mod image_response;
 mod kv_error;
 
 pub async fn post_kv(
@@ -45,7 +47,7 @@ pub async fn grayscale(
     let image = match state.read()?.db.get(&key) {
         Some((content_type, data)) => {
             if content_type == "image/png" {
-                image::load_from_memory(&data).unwrap()
+                image::load_from_memory(&data)?
             } else {
                 return Err(KVError::forbidden());
             }
@@ -53,14 +55,5 @@ pub async fn grayscale(
         None => return Err(KVError::not_found()),
     };
 
-    let mut vec: Vec<u8> = Vec::new();
-
-    let mut cursor = Cursor::new(&mut vec);
-    image
-        .grayscale()
-        .write_to(&mut cursor, ImageOutputFormat::Png)
-        .unwrap();
-    let bytes: Bytes = vec.into();
-
-    Ok(([("content-type", "image/png")], bytes).into_response())
+    Ok(ImageResponse::from(image.grayscale()))
 }
