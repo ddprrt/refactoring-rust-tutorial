@@ -1,5 +1,3 @@
-use std::io::Cursor;
-
 use axum::{
     extract::{Path, State},
     headers::ContentType,
@@ -7,7 +5,6 @@ use axum::{
     TypedHeader,
 };
 use hyper::body::Bytes;
-use image::ImageOutputFormat;
 
 use crate::SharedState;
 
@@ -16,6 +13,9 @@ use self::kv_error::KVError;
 
 mod image_response;
 mod kv_error;
+mod stored_type;
+
+pub use stored_type::StoredType;
 
 pub async fn post_kv(
     Path(key): Path<String>,
@@ -23,10 +23,8 @@ pub async fn post_kv(
     State(state): State<SharedState>,
     data: Bytes,
 ) -> Result<String, KVError> {
-    state
-        .write()?
-        .db
-        .insert(key, (content_type.to_string(), data));
+    let stored = StoredType::new(content_type, data)?;
+    state.write()?.db.insert(key, stored);
     Ok("OK".to_string())
 }
 
@@ -35,7 +33,7 @@ pub async fn get_kv(
     State(state): State<SharedState>,
 ) -> Result<impl IntoResponse, KVError> {
     match state.read()?.db.get(&key) {
-        Some((content_type, data)) => Ok(([("content-type", content_type.clone())], data.clone())),
+        Some(elem) => Ok(elem.into_response()),
         None => Err(KVError::not_found()),
     }
 }
@@ -44,16 +42,24 @@ pub async fn grayscale(
     Path(key): Path<String>,
     State(state): State<SharedState>,
 ) -> Result<impl IntoResponse, KVError> {
-    let image = match state.read()?.db.get(&key) {
-        Some((content_type, data)) => {
-            if content_type == "image/png" {
-                image::load_from_memory(&data)?
-            } else {
-                return Err(KVError::forbidden());
-            }
-        }
-        None => return Err(KVError::not_found()),
-    };
+    match state.read()?.db.get(&key) {
+        Some(StoredType::Image(image)) => Ok(ImageResponse::try_from(image.grayscale())?),
+        Some(StoredType::Other(_, _)) => return Err(KVError::forbidden()),
+        _ => return Err(KVError::not_found()),
+    }
+}
 
-    Ok(ImageResponse::try_from(image.grayscale()))
+pub async fn thumbnail(
+    Path(key): Path<String>,
+    State(state): State<SharedState>,
+) -> Result<impl IntoResponse, KVError> {
+    match state.read()?.db.get(&key) {
+        Some(StoredType::Image(image)) => Ok(ImageResponse::try_from(image.resize(
+            100,
+            100,
+            image::imageops::FilterType::Nearest,
+        ))?),
+        Some(StoredType::Other(_, _)) => return Err(KVError::forbidden()),
+        _ => return Err(KVError::not_found()),
+    }
 }

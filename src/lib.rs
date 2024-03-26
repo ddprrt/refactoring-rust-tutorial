@@ -4,14 +4,12 @@ use std::{
 };
 
 use axum::{
-    body::Bytes,
     extract::{Query, State},
-    headers::ContentType,
     response::IntoResponse,
     routing::get,
     Router,
 };
-use kv_store::{get_kv, grayscale, post_kv};
+use kv_store::{get_kv, grayscale, post_kv, StoredType};
 use serde::Deserialize;
 
 mod kv_store;
@@ -42,7 +40,7 @@ async fn poison(State(state): State<SharedState>) -> impl IntoResponse {
 
 #[derive(Default)]
 pub struct AppState {
-    db: HashMap<String, (String, Bytes)>,
+    db: HashMap<String, StoredType>,
 }
 
 pub fn router(state: &SharedState) -> Router<SharedState> {
