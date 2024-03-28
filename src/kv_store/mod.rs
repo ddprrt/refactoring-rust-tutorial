@@ -1,7 +1,7 @@
 use axum::{
     extract::{Path, State},
     headers::ContentType,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
     TypedHeader,
 };
 use hyper::body::Bytes;
@@ -31,9 +31,9 @@ pub async fn post_kv(
 pub async fn get_kv(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, KVError> {
+) -> Result<StoredType, KVError> {
     match state.read()?.db.get(&key) {
-        Some(elem) => Ok(elem.into_response()),
+        Some(elem) => Ok(elem.clone()),
         None => Err(KVError::not_found()),
     }
 }
@@ -41,9 +41,9 @@ pub async fn get_kv(
 pub async fn grayscale(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, KVError> {
+) -> Result<ImageResponse, KVError> {
     match state.read()?.db.get(&key) {
-        Some(StoredType::Image(image)) => Ok(ImageResponse::try_from(image.grayscale())?),
+        Some(StoredType::Image(image)) => image.grayscale().try_into(),
         Some(StoredType::Other(_, _)) => Err(KVError::forbidden()),
         _ => Err(KVError::not_found()),
     }
@@ -52,13 +52,11 @@ pub async fn grayscale(
 pub async fn _thumbnail(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, KVError> {
+) -> Result<ImageResponse, KVError> {
     match state.read()?.db.get(&key) {
-        Some(StoredType::Image(image)) => Ok(ImageResponse::try_from(image.resize(
-            100,
-            100,
-            image::imageops::FilterType::Nearest,
-        ))?),
+        Some(StoredType::Image(image)) => image
+            .resize(100, 100, image::imageops::FilterType::Nearest)
+            .try_into(),
         Some(StoredType::Other(_, _)) => Err(KVError::forbidden()),
         _ => Err(KVError::not_found()),
     }

@@ -4,6 +4,7 @@ use image::DynamicImage;
 
 use super::{image_response::ImageResponse, kv_error::KVError};
 
+#[derive(Clone)]
 pub enum StoredType {
     Image(DynamicImage),
     Other(ContentType, Bytes),
@@ -20,7 +21,7 @@ impl StoredType {
     }
 }
 
-impl IntoResponse for &StoredType {
+impl IntoResponse for StoredType {
     fn into_response(self) -> axum::response::Response {
         match self {
             StoredType::Image(image) => match ImageResponse::try_from(image) {
