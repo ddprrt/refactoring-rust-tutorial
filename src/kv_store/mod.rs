@@ -43,7 +43,7 @@ pub async fn get_kv(
 pub async fn grayscale(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, KVError> {
+) -> Result<ImageResponse, KVError> {
     let image = match state.read()?.db.get(&key) {
         Some((content_type, data)) => {
             if content_type == "image/png" {
@@ -55,5 +55,5 @@ pub async fn grayscale(
         None => return Err(KVError::not_found()),
     };
 
-    Ok(ImageResponse::try_from(image.grayscale()))
+    image.grayscale().try_into()
 }
