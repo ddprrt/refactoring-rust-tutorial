@@ -15,7 +15,7 @@ impl KVError {
         KVError::new(StatusCode::NOT_FOUND, "Key not found")
     }
 
-    pub(crate) fn forbidden() -> _ {
+    pub(crate) fn forbidden() -> Self {
         KVError::new(
             StatusCode::FORBIDDEN,
             "Not possible to grayscale this type of image",
