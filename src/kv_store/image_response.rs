@@ -35,9 +35,7 @@ impl TryFrom<&DynamicImage> for ImageResponse {
         let mut vec: Vec<u8> = Vec::new();
 
         let mut cursor = Cursor::new(&mut vec);
-        value
-            .grayscale()
-            .write_to(&mut cursor, ImageOutputFormat::Png)?;
+        value.write_to(&mut cursor, ImageOutputFormat::Png)?;
         Ok(Self::new(vec))
     }
 }
