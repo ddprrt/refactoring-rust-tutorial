@@ -9,7 +9,7 @@ use axum::{
     routing::get,
     Router,
 };
-use kv_store::{get_kv, grayscale, post_kv, StoredType};
+use kv_store::{get_kv, grayscale, post_kv, thumbnail, StoredType};
 use serde::Deserialize;
 
 mod kv_store;
@@ -49,5 +49,6 @@ pub fn router(state: &SharedState) -> Router<SharedState> {
         .route("/hello", get(hello_handler))
         .route("/kv/:key", get(get_kv).post(post_kv))
         .route("/kv/:key/grayscale", get(grayscale))
+        .route("/kv/:key/thumbnail", get(thumbnail))
         .route("/poison", get(poison))
 }

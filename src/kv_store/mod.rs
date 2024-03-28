@@ -49,14 +49,12 @@ pub async fn grayscale(
     }
 }
 
-pub async fn _thumbnail(
+pub async fn thumbnail(
     Path(key): Path<String>,
     State(state): State<SharedState>,
 ) -> Result<ImageResponse, KVError> {
     match state.read()?.db.get(&key) {
-        Some(StoredType::Image(image)) => image
-            .resize(100, 100, image::imageops::FilterType::Nearest)
-            .try_into(),
+        Some(StoredType::Image(image)) => image.thumbnail(100, 100).try_into(),
         Some(StoredType::Other(_, _)) => Err(KVError::forbidden()),
         _ => Err(KVError::not_found()),
     }
