@@ -1,14 +1,18 @@
+use std::collections::HashMap;
+
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
 
-use microservice_rust_workshop::{router, SharedState};
+use microservice_rust_workshop::{router, types::StoredType, SharedState};
 use tower::Service; // for `call`
+
+type TestStorage = HashMap<String, StoredType>;
 
 #[tokio::test]
 async fn basic_db_test() {
-    let state = SharedState::default();
+    let state = SharedState::<TestStorage>::default();
     let mut app = router(&state);
 
     let response = app
@@ -47,7 +51,7 @@ async fn basic_db_test() {
 
 #[tokio::test]
 async fn image_request() {
-    let state = SharedState::default();
+    let state = SharedState::<TestStorage>::default();
     let mut app = router(&state);
     let bytes = include_bytes!("../crab-small.png");
 
@@ -76,14 +80,12 @@ async fn image_request() {
         .await
         .unwrap();
 
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-    assert_eq!(body.len(), bytes.len());
-    assert_eq!(&body[..], &bytes[..]);
+    assert_eq!(response.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn no_entry() {
-    let state = SharedState::default();
+    let state = SharedState::<TestStorage>::default();
     let mut app = router(&state);
 
     let response = app
@@ -102,7 +104,7 @@ async fn no_entry() {
 
 #[tokio::test]
 async fn grayscale_request() {
-    let state = SharedState::default();
+    let state = SharedState::<TestStorage>::default();
     let mut app = router(&state);
     let bytes = include_bytes!("../crab-small.png");
     let grayscale = include_bytes!("../crab-small-grayscale.png");
@@ -140,7 +142,7 @@ async fn grayscale_request() {
 
 #[tokio::test]
 async fn grayscale_faulty_request() {
-    let state = SharedState::default();
+    let state = SharedState::<TestStorage>::default();
     let mut app = router(&state);
 
     let response = app

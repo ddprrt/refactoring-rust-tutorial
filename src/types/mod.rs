@@ -2,7 +2,7 @@ use axum::{headers::ContentType, response::IntoResponse};
 use hyper::body::Bytes;
 use image::DynamicImage;
 
-use super::{image_response::ImageResponse, kv_error::KVError};
+use super::kv_store::{image_response::ImageResponse, kv_error::KVError};
 
 #[derive(Clone)]
 pub enum StoredType {
