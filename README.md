@@ -24,7 +24,7 @@ After installing, you should have a set of new command line tools available.
 4. Enter
 
 ```bash
-$ cargo build
+$ cargo run
 ```
 5. Open your browser at https://localhost:3000
 
@@ -50,4 +50,47 @@ We recommend the following extensions:
 
 - [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens). Inline errors
 
+## Tasks
 
+This tutorial is divided into multiple exercises. You can find each solution in a branch called `step-N` (starting with 0).
+
+Goal: The application in this repository is a simple web server that serves as a Key-Value store. For stored images, it provides additional endpoints to modify the existing images. The `grayscale` endpoint is our main focus. We are going to refactor this piece of code to make it more readable, maintainable and testable.
+
+### Step 0: Syntax
+
+- [ ] Look at the `grayscale` endpoint and try to understand what's going on.
+- [ ] Look at the way the developer handled errors, is there a better way to do so? `unwrap`s are allowed for this step.
+- [ ] Try splitting up the function into a part to retrieve the data you want to work with and the actual logic to convert the image to grayscale.
+
+### Step 1: Error Handling
+
+- [ ] Let's get rid of all the `unwrap`s in our code.
+- [ ] Create a custom error type for our application.
+- [ ] Create shortcuts to get proper responses for specific situations
+- [ ] Apply the correct traits to make sure we align well with the eco-system
+- [ ] Discuss: Why do we need to implement the `Error` trait.
+
+### Step 2: Custom Types
+
+- [ ] Create a custom type for image responses
+- [ ] Make sure to align the type with the Axum ecosystem
+- [ ] Create proper conversions from the types used in your application and your types
+- [ ] Try to name the patterns you've been using
+- [ ] Discuss: Do we hide too much? How do we communicate intent?
+
+### Step 3: Polymorphism
+
+- [ ] Create a custom type that represents the stored data
+- [ ] Differentiate between images and other thigns
+- [ ] Make the type compatible with the rest of the application. Adjust `get_kv`, `post_kv` where necessary
+- [ ] Discuss: Is it ok to change our model?
+- [ ] Implement a `thumbnail` function and see the 🪄 happen!
+
+### Step 4: Specialization
+
+- [ ] Prepare our application to serve different databases
+- [ ] Create a trait that represents the operations on a database
+- [ ] Implement the trait for our current database, the HashMap
+- [ ] Discuss: ownership in that context
+- [ ] Make all your functions generic over the database type
+- [ ] Bonus: Implement the trait for a different database
