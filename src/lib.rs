@@ -16,6 +16,11 @@ use serde::Deserialize;
 
 mod kv_store;
 
+#[derive(Default)]
+pub struct AppState {
+    db: HashMap<String, (String, Bytes)>,
+}
+
 /// Custom type for a shared state
 pub type SharedState = Arc<RwLock<AppState>>;
 
@@ -38,11 +43,6 @@ async fn hello_handler(Query(name): Query<Name>) -> impl IntoResponse {
 async fn poison(State(state): State<SharedState>) -> impl IntoResponse {
     let _guard = state.write().unwrap();
     panic!("At the disco");
-}
-
-#[derive(Default)]
-pub struct AppState {
-    db: HashMap<String, (String, Bytes)>,
 }
 
 pub fn router(state: &SharedState) -> Router<SharedState> {
