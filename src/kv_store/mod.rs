@@ -7,7 +7,8 @@ use axum::{
     TypedHeader,
 };
 use hyper::{body::Bytes, StatusCode};
-use image::ImageOutputFormat;
+use image::{DynamicImage, ImageOutputFormat};
+use kv_error::KVError;
 
 use crate::SharedState;
 
@@ -40,50 +41,27 @@ pub async fn get_kv(
 pub async fn grayscale(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    let state = state.read();
-    if state.is_err() {
-        return Err((StatusCode::INTERNAL_SERVER_ERROR, "Error accessing state").into_response());
-    } else {
-        let state = state.unwrap();
-        let db = state.db.clone();
-        if db.contains_key(&key) {
-            let (content_type, data) = db.get(&key).unwrap();
-            if content_type == "image/png" {
-                let image = image::load_from_memory(&data);
-                let image = if image.is_err() {
-                    return Err((
-                        StatusCode::FORBIDDEN,
-                        "Not possible to grayscale this type of image",
-                    )
-                        .into_response());
-                } else {
-                    image.unwrap()
-                };
-                let mut vec: Vec<u8> = Vec::new();
-                let mut cursor = Cursor::new(&mut vec);
-                let result = image
-                    .grayscale()
-                    .write_to(&mut cursor, ImageOutputFormat::Png);
-                if result.is_err() {
-                    return Err((
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "Error writing grayscale image",
-                    )
-                        .into_response());
-                }
-                let bytes: Bytes = vec.into();
+) -> Result<impl IntoResponse, KVError> {
+    let image = get_image(state, key)?;
 
-                return Ok(([("content-type", "image/png")], bytes).into_response());
-            } else {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    "Not possible to grayscale this type of image",
-                )
-                    .into_response());
-            }
-        } else {
-            return Err((StatusCode::NOT_FOUND, "Key not found").into_response());
-        }
-    }
+    let mut vec: Vec<u8> = Vec::new();
+    let mut cursor = Cursor::new(&mut vec);
+    image
+        .grayscale()
+        .write_to(&mut cursor, ImageOutputFormat::Png)?;
+    let bytes: Bytes = vec.into();
+    Ok(([("content-type", "image/png")], bytes).into_response())
+}
+
+fn get_image(state: SharedState, key: String) -> Result<DynamicImage, KVError> {
+    let db = &state.read()?.db;
+    let Some((content_type, data)) = db.get(&key) else {
+        return Err(KVError::not_found())
+    };
+    let image = if content_type == "image/png" {
+        image::load_from_memory(&data)?
+    } else {
+        return Err(KVError::forbidden());
+    };
+    Ok(image)
 }
