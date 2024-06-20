@@ -1,5 +1,3 @@
-use std::io::Cursor;
-
 use axum::{
     extract::{Path, State},
     headers::ContentType,
@@ -7,11 +5,13 @@ use axum::{
     TypedHeader,
 };
 use hyper::{body::Bytes, StatusCode};
-use image::{DynamicImage, ImageOutputFormat};
+use image::DynamicImage;
+use image_response::ImageResponse;
 use kv_error::KVError;
 
 use crate::SharedState;
 
+mod image_response;
 mod kv_error;
 
 pub async fn post_kv(
@@ -38,19 +38,20 @@ pub async fn get_kv(
     }
 }
 
+pub async fn blur(
+    Path((key, sigma)): Path<(String, f32)>,
+    State(state): State<SharedState>,
+) -> Result<ImageResponse, KVError> {
+    let image = get_image(state, key)?;
+    Ok(image.blur(sigma).try_into()?)
+}
+
 pub async fn grayscale(
     Path(key): Path<String>,
     State(state): State<SharedState>,
-) -> Result<impl IntoResponse, KVError> {
+) -> Result<ImageResponse, KVError> {
     let image = get_image(state, key)?;
-
-    let mut vec: Vec<u8> = Vec::new();
-    let mut cursor = Cursor::new(&mut vec);
-    image
-        .grayscale()
-        .write_to(&mut cursor, ImageOutputFormat::Png)?;
-    let bytes: Bytes = vec.into();
-    Ok(([("content-type", "image/png")], bytes).into_response())
+    Ok(image.grayscale().try_into()?)
 }
 
 fn get_image(state: SharedState, key: String) -> Result<DynamicImage, KVError> {
