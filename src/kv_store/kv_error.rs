@@ -26,6 +26,13 @@ impl KVError {
             message: "Key not found".to_string(),
         }
     }
+
+    pub fn impossible_operation() -> Self {
+        KVError {
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: "Not possible to insert value".to_string(),
+        }
+    }
 }
 
 impl std::error::Error for KVError {}

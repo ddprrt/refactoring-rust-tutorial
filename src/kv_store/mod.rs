@@ -1,68 +1,57 @@
 use axum::{
     extract::{Path, State},
     headers::ContentType,
-    response::IntoResponse,
     TypedHeader,
 };
-use hyper::{body::Bytes, StatusCode};
-use image::DynamicImage;
+use database::KVDatabase;
+use hyper::body::Bytes;
 use image_response::ImageResponse;
 use kv_error::KVError;
+use stored_type::StoredType;
 
 use crate::SharedState;
 
+pub mod database;
 mod image_response;
 mod kv_error;
+pub mod stored_type;
 
-pub async fn post_kv(
+pub async fn post_kv<T: KVDatabase>(
     Path(key): Path<String>,
     TypedHeader(content_type): TypedHeader<ContentType>,
-    State(state): State<SharedState>,
+    State(state): State<SharedState<T>>,
     data: Bytes,
-) -> Result<String, ()> {
+) -> Result<String, KVError> {
     state
-        .write()
-        .expect("What, an error here?")
+        .write()?
         .db
-        .insert(key, (content_type.to_string(), data));
+        .write(key, StoredType::try_from((content_type.to_string(), data))?)?;
     Ok("OK".to_string())
 }
 
-pub async fn get_kv(
+pub async fn get_kv<T: KVDatabase>(
     Path(key): Path<String>,
-    State(state): State<SharedState>,
-) -> Result<impl IntoResponse, impl IntoResponse> {
-    match state.read().unwrap().db.get(&key) {
-        Some((content_type, data)) => Ok(([("content-type", content_type.clone())], data.clone())),
-        None => Err((StatusCode::NOT_FOUND, "Key not found").into_response()),
+    State(state): State<SharedState<T>>,
+) -> Result<StoredType, KVError> {
+    state.read()?.db.read(key)
+}
+
+pub async fn blur<T: KVDatabase>(
+    Path((key, sigma)): Path<(String, f32)>,
+    State(state): State<SharedState<T>>,
+) -> Result<ImageResponse, KVError> {
+    match state.read()?.db.read(key)? {
+        StoredType::Image(image) => Ok(image.blur(sigma).try_into()?),
+        _ => Err(KVError::forbidden()),
     }
 }
 
-pub async fn blur(
-    Path((key, sigma)): Path<(String, f32)>,
-    State(state): State<SharedState>,
-) -> Result<ImageResponse, KVError> {
-    let image = get_image(state, key)?;
-    Ok(image.blur(sigma).try_into()?)
-}
-
-pub async fn grayscale(
+pub async fn grayscale<T: KVDatabase>(
     Path(key): Path<String>,
-    State(state): State<SharedState>,
+    State(state): State<SharedState<T>>,
 ) -> Result<ImageResponse, KVError> {
-    let image = get_image(state, key)?;
-    Ok(image.grayscale().try_into()?)
-}
-
-fn get_image(state: SharedState, key: String) -> Result<DynamicImage, KVError> {
-    let db = &state.read()?.db;
-    let Some((content_type, data)) = db.get(&key) else {
-        return Err(KVError::not_found())
-    };
-    let image = if content_type == "image/png" {
-        image::load_from_memory(&data)?
-    } else {
-        return Err(KVError::forbidden());
-    };
-    Ok(image)
+    match state.read()?.db.read(key)? {
+        StoredType::Image(image) => Ok(image.grayscale().try_into()?),
+        _ => Err(KVError::forbidden()),
+    }
 }

@@ -1,14 +1,18 @@
+use std::collections::HashMap;
+
 use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
 
-use microservice_rust_workshop::{router, SharedState};
+use microservice_rust_workshop::{kv_store::stored_type::StoredType, router, SharedState};
 use tower::Service; // for `call`
+
+type TestState = SharedState<HashMap<String, StoredType>>;
 
 #[tokio::test]
 async fn hello_world() {
-    let state = SharedState::default();
+    let state = TestState::default();
     let mut app = router(&state);
 
     let response = app
