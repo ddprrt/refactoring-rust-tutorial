@@ -25,7 +25,7 @@ pub async fn post_kv<T: KVDatabase>(
     state
         .write()?
         .db
-        .write(key, StoredType::try_from((content_type.to_string(), data))?)?;
+        .insert(key, StoredType::try_from((content_type.to_string(), data))?)?;
     Ok("OK".to_string())
 }
 
